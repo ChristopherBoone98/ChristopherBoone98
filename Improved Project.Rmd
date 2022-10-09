@@ -1,0 +1,146 @@
+---
+title: 'R Markdown File: Improved Project'
+author: "Christopher Boone"
+date: "2022-04-23"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+## Setting up the environment
+Notes: I will load the 'tidyverse' package.
+
+```{r, Load the package}
+library(tidyverse)
+```
+
+## Next, I will import and view the college athletes concussion count dataset.
+
+```{r, Import the College Athletes concussion count dataset and view it}
+concussion <- read.table("http://users.stat.ufl.edu/~winner/data/concussion.dat")
+View(concussion)
+```
+
+## Viewing the dataset, I noticed the data is already cleaned.
+## However, I want to replace the initial variables with new variables.
+
+```{r, New variables}
+names(concussion) <- c("Gender","Sport","Academic_Year","Concussion_ID","Count")
+View(concussion)
+```
+## This dataset is unique and has a way of telling its story
+## I'll show you the first two rows of the dataset
+
+```{r}
+head(concussion, 2)
+```
+## This dataset distinguishes between female college athletes who weren't
+## diagnosed with a concussion and who were in the same academic year,
+## playing the same sport.
+
+## In summary, out of 24,981 female college athletes, who played soccer in
+## 1997, only 51 female college athletes were diagnosed with a concussion.
+
+## Next, I want to distinguish Softball/Baseball for Male and Female.
+## Softball for female, Baseball for male.
+## First, I will load the 'stringr' package and use the if/else function
+## Then, I will view how the dataset looks
+
+```{r, Distiguishing Softball/Baseball for Gender}
+library(stringr)
+concussion$Sport <- ifelse(concussion$Gender == "Female", 
+                           str_replace(as.character(concussion$Sport), "Softball/Baseball", "Softball"), as.character(concussion$Sport))
+
+concussion$Sport <- ifelse(concussion$Gender == "Male", 
+                           str_replace(as.character(concussion$Sport), "Softball/Baseball", "Baseball"), as.character(concussion$Sport))
+
+View(concussion)
+```
+
+## Now that the concussion dataset is transformed, I want to look at
+## the college athletes that were diagnosed with a concussion.
+## By doing this, I will filter the dataset that only displays college
+## athletes that were diagnosed with a concussion (I will try the pipe
+## function in this scenario).
+## Keep in mind that in the dataset, you will see who has concussion
+## based off the variable, Concussion_ID, and it goes by 0 and 1.
+## 0 = Not diagnosed with a concussion. 1 = Diagnosed with a concussion.
+
+```{r}
+concussed <- concussion %>%
+  filter(Concussion_ID == 1) %>%
+  group_by(Academic_Year) 
+  
+View(concussed)
+```
+
+## View the summary of the concussed data
+
+```{r}
+summary(concussed)
+```
+
+
+## I want to look at which sport, gender, and academic year had the
+## highest concussion count. By doing this, I will create visualization
+## using the ggplot.
+
+```{r, Most concussion counts based off academic year}
+ggplot(data = concussed, aes(fill = Sport, y = Count, x = Academic_Year)) +
+  geom_bar(position = "dodge", stat = "identity")
+```
+## Academic Year
+
+```{r}
+ggplot(concussed, aes(x=Academic_Year, y=Count))+
+  geom_bar(stat="identity", width=0.5)
+```
+
+## Gender
+## (Because baseball and softball are distinguished between gender,
+## I will remove the two by filtering another dataset.)
+
+```{r}
+concussed_2 <- concussed %>%
+  filter(Concussion_ID == 1, Sport != "Baseball" & Sport != "Softball") %>%
+  group_by(Academic_Year)
+
+View(concussed_2)
+
+ggplot(concussed_2, aes(fill=Gender, y=Count, x=Sport)) +
+  geom_bar(position="dodge", stat="identity")
+```
+
+## Outside of baseball and softball, soccer had the most concussion counts for
+## both male and female.
+
+## Gymnastics had the lowest concussion counts.
+
+## Next, we will check which academic year had more concussion counts in soccer
+## for both genders.
+
+```{r}
+soccer <- concussed_2 %>%
+  filter(Sport == "Soccer")
+
+ggplot(soccer, aes(fill=Gender, y=Count, x=Academic_Year)) +
+  geom_bar(position="dodge", stat="identity")
+```
+
+## 1999 had more concussion counts for both genders, playing soccer.
+## Overall, female college-athletes had more concussion counts than male college athletes.
+
+## Gymnastic had a really low concussion count. I want to see which academic
+## year received a concussion in Gymnastics.
+
+```{r}
+gymnastics <- concussed_2 %>%
+  filter(Sport == "Gymnastics")
+
+ggplot(gymnastics, aes(fill=Gender, y=Count, x=Academic_Year)) +
+  geom_bar(position="dodge", stat="identity")
+```
+
+## In 1997, gymnastics only had one concussion count and it came from female 
+## college athlete.
